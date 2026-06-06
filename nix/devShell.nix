@@ -1,8 +1,9 @@
-{ pkgs, go }:
+{ pkgs, go, govendor }:
 
 pkgs.mkShell {
   packages = [
     go.withDefaultTools
+    govendor
   ];
 
   shellHook = ''

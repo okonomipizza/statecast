@@ -113,6 +113,44 @@ statecast get --name "Agent A"
 - クラウド連携
 - 状態の永続化（再起動で失われるインメモリ管理を前提）
 
+## インストール
+
+最新版を `~/.local/bin` にインストールする:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/okonomipizza/statecast/master/scripts/install.sh | bash
+```
+
+`PATH` に `~/.local/bin` を追加する:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+特定バージョンを入れる:
+
+```bash
+VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/okonomipizza/statecast/master/scripts/install.sh | bash
+```
+
+インストール先を変える（`/usr/local/bin` など）:
+
+```bash
+INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/okonomipizza/statecast/master/scripts/install.sh | sudo bash
+```
+
+### 手動ダウンロード
+
+[Releases](https://github.com/okonomipizza/statecast/releases) から `statecast_<version>_<os>_<arch>.tar.gz` を取得し、展開したバイナリを PATH の通ったディレクトリへ置く。`checksums.txt` で SHA256 を確認できる。
+
+### Nix
+
+flake からバイナリを入れる:
+
+```bash
+nix profile install github:okonomipizza/statecast
+```
+
 ## 開発
 
 Go で実装する。開発環境は Nix flake と [go-overlay](https://github.com/purpleclay/go-overlay) で提供する。
@@ -128,6 +166,21 @@ make build
 ```
 
 `./statecast` バイナリが生成される。
+
+Nix でバイナリをビルドする場合:
+
+```bash
+nix build
+./result/bin/statecast --help
+```
+
+`go.mod` / `go.sum` を更新したら、Nix ビルド用の依存マニフェストも同期する:
+
+```bash
+nix develop -c govendor
+```
+
+生成された `govendor.toml` をコミットする。CI では `govendor --check` でドリフトを検出できる。
 
 ### テスト
 

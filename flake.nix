@@ -21,9 +21,23 @@
           overlays = [ go-overlay.overlays.default ];
         };
         go = pkgs.go-bin.fromGoMod ./go.mod;
+        statecast = pkgs.callPackage ./nix/package.nix {
+          inherit go;
+          src = ./.;
+        };
       in
       {
-        devShells.default = import ./nix/devShell.nix { inherit pkgs go; };
+        packages.default = statecast;
+        packages.statecast = statecast;
+
+        apps.default = flake-utils.lib.mkApp {
+          drv = statecast;
+        };
+
+        devShells.default = import ./nix/devShell.nix {
+          inherit pkgs go;
+          govendor = go-overlay.packages.${system}.govendor;
+        };
       }
     );
 }
