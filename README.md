@@ -39,20 +39,31 @@ AI エージェント間で状態を共有するためのローカル daemon。
 状態は JSON 形式の文字列として扱う。エージェントが CLI から直接渡す。
 
 ```bash
-statecast update '{"key": "value"}'
+statecast update --name "Agent A" '{"key": "value"}'
 ```
 
 ファイルからの読み込みは将来対応の候補だが、現時点では CLI 引数による文字列指定のみを想定する。
 
 ## CLI
 
-### daemon の起動
+### daemon の起動・停止
 
 ```bash
-statecast run
+statecast start
+statecast stop
 ```
 
-バックグラウンドで daemon を起動し、エージェントからのリクエストを受け付ける。
+`start` はバックグラウンドで daemon を起動し、エージェントからのリクエストを受け付ける。`stop` は起動中の daemon に SIGTERM を送り、停止する。
+
+### エージェントの登録
+
+```bash
+statecast register --name "Agent A"
+```
+
+- `--name`: エージェント名（必須、一意）
+
+登録後、name が表示される。以降の `update` / `get` では `--name` でこの名前を指定する。
 
 ### 状態の一覧
 
@@ -60,41 +71,41 @@ statecast run
 statecast list
 ```
 
-daemon が管理している状態の一覧を表示する。エージェント単位で登録されている状態が対象。
+登録済みエージェント名の一覧を表示する。
+
+```
+# name
+Agent A
+Agent B
+```
 
 ### 状態の更新
 
 ```bash
-statecast update '{"key": "value"}'
+statecast update --name "Agent A" '{"key": "value"}'
 ```
 
-呼び出し元エージェントに紐づく状態を、指定した JSON 文字列で更新する。
+登録済みエージェントの状態を、指定した JSON 文字列で更新する。
 
 ### 状態の読み取り
 
 ```bash
-statecast get
-statecast get --agent <agent-id>
+statecast get --name "Agent A"
 ```
 
-- 引数なし: 呼び出し元エージェント自身の状態を取得する
-- `--agent`: 指定したエージェントの状態を取得する
+登録済みエージェントの状態を取得する。
 
 ## エージェントの識別
 
-各 CLI 呼び出しは、いずれかの方法でエージェントを特定する（詳細は実装時に確定）。
-
-- 環境変数（例: `STATECAST_AGENT_ID`）
-- CLI フラグ（例: `--agent-id`）
-
-`list` や `get --agent` で表示・参照する識別子と、更新時に使う識別子は同一の名前空間とする。
+エージェントは `register` で name を登録する。name は一意。`update` / `get` では `--name` フラグで対象エージェントを指定する。
 
 ## 想定する利用フロー
 
-1. `statecast run` で daemon を起動する
-2. Agent A が `statecast update` で自身の状態を書き込む
-3. Agent B が `statecast get --agent agent-a` で Agent A の状態を読み取る
-4. Agent B が必要に応じて `statecast update` で自身の状態を更新する
+1. `statecast start` で daemon を起動する
+2. Agent A が `statecast register --name "Agent A"` で登録する
+3. Agent A が `statecast update --name "Agent A"` で自身の状態を書き込む
+4. Agent B が `statecast get --name "Agent A"` で Agent A の状態を読み取る
+5. Agent B が `statecast register --name "Agent B"` で自身を登録し、`statecast update --name "Agent B"` で自身の状態を更新する
 
 ## スコープ外（現時点）
 
@@ -109,6 +120,30 @@ Go で実装する。開発環境は Nix flake と [go-overlay](https://github.c
 ```bash
 nix develop
 ```
+
+### ビルド
+
+```bash
+make build
+```
+
+`./statecast` バイナリが生成される。
+
+### テスト
+
+```bash
+make test
+make lint
+```
+
+fuzz テスト（任意）:
+
+```bash
+go test ./internal/store -fuzz=FuzzRegisterName -fuzztime=30s
+go test ./internal/store -fuzz=FuzzPutStateValidJSON -fuzztime=30s
+```
+
+### 開発環境
 
 利用する Go のバージョンは `go.mod` の `go` ディレクティブで指定する（現在: 1.25）。go-overlay が対応するツールチェーンと開発ツールを提供する。
 

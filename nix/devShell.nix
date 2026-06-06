@@ -5,14 +5,10 @@ pkgs.mkShell {
     go.withDefaultTools
   ];
 
-  env = {
-    # プロジェクトローカルに Go モジュールキャッシュを置く
-    GOMODCACHE = ".go/pkg/mod";
-    GOCACHE = ".go/cache";
-  };
-
   shellHook = ''
     mkdir -p .go/pkg/mod .go/cache
+    export GOMODCACHE="$PWD/.go/pkg/mod"
+    export GOCACHE="$PWD/.go/cache"
     echo "Go $(go version | cut -d' ' -f3)"
   '';
 }
